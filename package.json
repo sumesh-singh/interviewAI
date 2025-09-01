@@ -63,7 +63,7 @@
     "vaul": "^0.9.9",
     "zod": "3.25.67",
     "openai": "^4.67.1",
-    "@types/web-speech-api": "^0.0.2",
+  
     "react-speech-kit": "^3.0.1",
     "nanoid": "^5.0.8"
   },

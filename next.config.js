@@ -1,14 +1,14 @@
-const withPWA = require('next-pwa')({
-  dest: 'public',
+const withPWA = require("next-pwa")({
+  dest: "public",
   register: true,
   skipWaiting: true,
-  disable: process.env.NODE_ENV === 'development',
+  disable: process.env.NODE_ENV === "development",
   runtimeCaching: [
     {
       urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-      handler: 'CacheFirst',
+      handler: "CacheFirst",
       options: {
-        cacheName: 'google-fonts',
+        cacheName: "google-fonts",
         expiration: {
           maxEntries: 4,
           maxAgeSeconds: 365 * 24 * 60 * 60, // 365 days
@@ -17,9 +17,9 @@ const withPWA = require('next-pwa')({
     },
     {
       urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-      handler: 'CacheFirst',
+      handler: "CacheFirst",
       options: {
-        cacheName: 'google-fonts-static',
+        cacheName: "google-fonts-static",
         expiration: {
           maxEntries: 4,
           maxAgeSeconds: 365 * 24 * 60 * 60, // 365 days
@@ -28,9 +28,9 @@ const withPWA = require('next-pwa')({
     },
     {
       urlPattern: /\.(?:js|css|woff2?|png|jpg|jpeg|gif|svg|ico)$/i,
-      handler: 'StaleWhileRevalidate',
+      handler: "StaleWhileRevalidate",
       options: {
-        cacheName: 'static-assets',
+        cacheName: "static-assets",
         expiration: {
           maxEntries: 60,
           maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
@@ -39,9 +39,9 @@ const withPWA = require('next-pwa')({
     },
     {
       urlPattern: /^https:\/\/api\.openai\.com\/.*/i,
-      handler: 'NetworkFirst',
+      handler: "NetworkFirst",
       options: {
-        cacheName: 'openai-api',
+        cacheName: "openai-api",
         expiration: {
           maxEntries: 50,
           maxAgeSeconds: 5 * 60, // 5 minutes
@@ -50,10 +50,10 @@ const withPWA = require('next-pwa')({
       },
     },
     {
-      urlPattern: ({ request }) => request.destination === 'document',
-      handler: 'NetworkFirst',
+      urlPattern: ({ request }) => request.destination === "document",
+      handler: "NetworkFirst",
       options: {
-        cacheName: 'pages',
+        cacheName: "pages",
         expiration: {
           maxEntries: 50,
           maxAgeSeconds: 24 * 60 * 60, // 24 hours
@@ -61,22 +61,22 @@ const withPWA = require('next-pwa')({
       },
     },
   ],
-})
+});
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
-  experimental: {
-    appDir: true,
-  },
+  // swcMinify: true, <-- REMOVED because it's default in new Next.js versions
+  // experimental: { <-- REMOVED because appDir is no longer experimental
+  //   appDir: true,
+  // },
   images: {
-    domains: ['localhost'],
+    domains: ["localhost"],
   },
   // Enable PWA features
   generateEtags: false,
   poweredByHeader: false,
   compress: true,
-}
+};
 
-module.exports = withPWA(nextConfig)
+module.exports = withPWA(nextConfig);
