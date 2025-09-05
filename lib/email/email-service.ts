@@ -14,11 +14,11 @@ export class EmailVerificationService {
   private supabase = createClient()
 
   /**
-   * Generate a new verification token that expires in 2 minutes
+   * Generate a new verification token that expires in 1 hour
    */
   async generateVerificationToken(email: string): Promise<string> {
     const token = nanoid(32)
-    const expiresAt = new Date(Date.now() + 2 * 60 * 1000) // 2 minutes from now
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour from now
 
     const { error } = await (await this.supabase)
       .from('email_verification_tokens')
@@ -175,7 +175,7 @@ export class EmailVerificationService {
             </div>
             
             <p style="color: #666; font-size: 14px;">
-              <strong>Important:</strong> This verification link will expire in 2 minutes for security reasons. 
+              <strong>Important:</strong> This verification link will expire in 1 hour for security reasons. 
               If the link expires, you can request a new verification email from the sign-up page.
             </p>
             
