@@ -20,8 +20,12 @@ export function PWAInstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false)
   const [isIOS, setIsIOS] = useState(false)
   const [isStandalone, setIsStandalone] = useState(false)
+  const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
+    // Set client-side flag
+    setIsClient(true)
+
     // Check if running in standalone mode
     const checkStandalone = () => {
       if (typeof window !== 'undefined') {
@@ -51,13 +55,15 @@ export function PWAInstallPrompt() {
       setDeferredPrompt(e as BeforeInstallPromptEvent)
       
       // Only show prompt if not already installed and not dismissed recently
-      const lastDismissed = localStorage.getItem('pwa-install-dismissed')
-      const daysSinceLastDismiss = lastDismissed 
-        ? (Date.now() - parseInt(lastDismissed)) / (1000 * 60 * 60 * 24)
-        : 7
+      if (typeof window !== 'undefined') {
+        const lastDismissed = localStorage.getItem('pwa-install-dismissed')
+        const daysSinceLastDismiss = lastDismissed 
+          ? (Date.now() - parseInt(lastDismissed)) / (1000 * 60 * 60 * 24)
+          : 7
 
-      if (daysSinceLastDismiss > 3) { // Show again after 3 days
-        setShowPrompt(true)
+        if (daysSinceLastDismiss > 3) { // Show again after 3 days
+          setShowPrompt(true)
+        }
       }
     }
 
@@ -88,11 +94,13 @@ export function PWAInstallPrompt() {
 
   const handleDismiss = () => {
     setShowPrompt(false)
-    localStorage.setItem('pwa-install-dismissed', Date.now().toString())
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('pwa-install-dismissed', Date.now().toString())
+    }
   }
 
-  // Don't show if already installed or dismissed
-  if (isStandalone || !showPrompt) {
+  // Don't show if not client-side, already installed or dismissed
+  if (!isClient || isStandalone || !showPrompt) {
     return null
   }
 

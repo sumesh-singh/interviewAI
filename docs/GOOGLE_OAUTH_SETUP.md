@@ -13,7 +13,7 @@ This guide walks you through setting up Google OAuth authentication for your Int
 ### 1.1 Go to Google Cloud Console
 1. Visit [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a new project or select an existing one
-3. Enable the **Google+ API** and **People API**
+3. **No APIs need to be manually enabled** - OAuth 2.0 for basic profile access works without enabling additional APIs
 
 ### 1.2 Configure OAuth Consent Screen
 1. Go to **APIs & Services** > **OAuth consent screen**
@@ -22,10 +22,10 @@ This guide walks you through setting up Google OAuth authentication for your Int
    - **App name**: AI Interview Assistant
    - **User support email**: Your support email
    - **Developer contact information**: Your email
-4. Add scopes:
-   - `email`
-   - `profile`
-   - `openid`
+4. Add scopes (these are automatically handled by OAuth 2.0):
+   - `email` - Access to email address
+   - `profile` - Access to basic profile information
+   - `openid` - OpenID Connect authentication
 5. Add test users (for development)
 6. Save and continue
 

@@ -103,10 +103,11 @@ export default function UsernameSetupPage() {
         .rpc('is_username_available', { requested_username: usernameToCheck })
 
       if (error) {
-        console.error('Error checking username:', error)
-        setUsernameAvailable(null)
+        // Print the error as a string and as an object
+        console.error('Error checking username:', error, JSON.stringify(error));
+        setUsernameAvailable(null);
       } else {
-        setUsernameAvailable(data)
+        setUsernameAvailable(data);
       }
     } catch (error) {
       console.error('Error checking username:', error)
@@ -165,7 +166,10 @@ export default function UsernameSetupPage() {
       .replace(/[^a-z0-9]/g, '')
       .substring(0, 12)
     
-    const randomNum = Math.floor(Math.random() * 1000)
+    // Use client-side only random number generation to avoid hydration issues
+    const randomNum = typeof window !== 'undefined' 
+      ? Math.floor(Math.random() * 1000) 
+      : 123 // fallback for SSR
     return `${baseName}${randomNum}`
   }
 
