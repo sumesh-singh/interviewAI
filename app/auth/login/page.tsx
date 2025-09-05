@@ -41,9 +41,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
-        options: {
-          emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/dashboard`,
-        },
+        //redirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/dashboard`,
       })
 
       if (error) throw error
@@ -176,21 +174,13 @@ export default function LoginPage() {
                 Forgot password?
               </Link>
             </div>
-
             {error && <p className="text-sm text-destructive">{error}</p>}
-
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Signing in..." : "Sign in"}
             </Button>
           </form>
 
-          <p className="text-sm text-center mt-4">
-            <a href="/auth/forgot-password" className="text-blue-600 hover:underline">
-              Forgot your password?
-            </a>
-          </p>
-
-          <div className="text-center text-sm">
+          <div className="text-center text-sm mt-4">
             Don't have an account?{" "}
             <Link href="/auth/register" className="text-primary hover:underline">
               Sign up
