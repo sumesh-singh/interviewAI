@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Mic, MicOff, Volume2 } from "lucide-react"
 import type { VoiceState } from "@/types/interview"
-import { speechService } from "@/lib/speech"
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition'
 
 interface VoiceRecorderProps {
   onTranscript: (text: string) => void
@@ -14,6 +14,18 @@ interface VoiceRecorderProps {
 }
 
 export function VoiceRecorder({ onTranscript, onStateChange, isActive }: VoiceRecorderProps) {
+  const { 
+    transcript, 
+    interimTranscript, 
+    finalTranscript, 
+    listening, 
+    resetTranscript, 
+    browserSupportsSpeechRecognition 
+  } = useSpeechRecognition({
+    continuous: true, // Enable continuous listening
+    interimResults: true // Get interim results
+  })
+
   const [voiceState, setVoiceState] = useState<VoiceState>({
     isRecording: false,
     isListening: false,
@@ -21,164 +33,161 @@ export function VoiceRecorder({ onTranscript, onStateChange, isActive }: VoiceRe
     hasPermission: false,
   })
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const animationFrameRef = useRef<number>()
-  const cleanupRecognitionRef = useRef<(() => void) | null>(null)
-  const currentTranscriptRef = useRef<string>("")
+  const currentMicrophoneStreamRef = useRef<MediaStream | null>(null)
 
+  // Check microphone permission on mount
   useEffect(() => {
-    checkMicrophonePermission()
-    initializeSpeechRecognition()
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current)
-      }
-      if (cleanupRecognitionRef.current) {
-        cleanupRecognitionRef.current()
+    const checkMicrophonePermission = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        setVoiceState((prev) => ({ ...prev, hasPermission: true }))
+        stream.getTracks().forEach((track) => track.stop())
+      } catch (error) {
+        setVoiceState((prev) => ({
+          ...prev,
+          hasPermission: false,
+          error: "Microphone permission denied",
+        }))
       }
     }
+    checkMicrophonePermission()
   }, [])
 
+  // Update voice state based on react-speech-recognition's listening state
+  useEffect(() => {
+    setVoiceState((prev) => ({
+      ...prev,
+      isRecording: listening,
+      isListening: listening,
+    }))
+  }, [listening])
+
+  // Handle transcript updates
+  useEffect(() => {
+    // react-speech-recognition automatically handles final vs interim
+    // The 'transcript' property is the full current transcript (final + interim)
+    // We'll use finalTranscript for sending, and 'transcript' for any real-time display if needed
+
+    if (!listening && finalTranscript) {
+      onTranscript(finalTranscript.trim())
+      resetTranscript() // Clear transcript after sending final
+    }
+    // If listening, send interim results for real-time display if desired by parent
+    // onTranscript(transcript, false) // This would be for continuous interim updates
+
+  }, [finalTranscript, transcript, listening, onTranscript, resetTranscript])
+
+  // Propagate voice state changes to parent
   useEffect(() => {
     onStateChange(voiceState)
   }, [voiceState, onStateChange])
 
-  const initializeSpeechRecognition = async () => {
-    try {
-      if (speechService.isRecognitionAvailable()) {
-        await speechService.initializeRecognition()
-      }
-    } catch (error) {
-      console.error('Failed to initialize speech recognition:', error)
-    }
-  }
-
-  const checkMicrophonePermission = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      setVoiceState((prev) => ({ ...prev, hasPermission: true }))
-      stream.getTracks().forEach((track) => track.stop())
-    } catch (error) {
-      setVoiceState((prev) => ({
-        ...prev,
-        hasPermission: false,
-        error: "Microphone permission denied",
-      }))
-    }
-  }
-
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-
-      // Set up audio context for visualization
-      audioContextRef.current = new AudioContext()
-      analyserRef.current = audioContextRef.current.createAnalyser()
-      const source = audioContextRef.current.createMediaStreamSource(stream)
-      source.connect(analyserRef.current)
-
-      // Set up media recorder for backup
-      mediaRecorderRef.current = new MediaRecorder(stream)
-      const chunks: BlobPart[] = []
-
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        chunks.push(event.data)
-      }
-
-      mediaRecorderRef.current.start()
-      setVoiceState((prev) => ({ ...prev, isRecording: true, isListening: true }))
-
-      // Start real-time speech recognition
-      if (speechService.isRecognitionAvailable()) {
-        currentTranscriptRef.current = ""
-        cleanupRecognitionRef.current = await speechService.startContinuousRecognition(
-          (transcript, isFinal) => {
-            if (isFinal) {
-              currentTranscriptRef.current += transcript + " "
-              onTranscript(currentTranscriptRef.current.trim())
-            }
-          },
-          (error) => {
-            console.error('Speech recognition error:', error)
-            setVoiceState((prev) => ({ ...prev, error }))
-          }
-        )
-      }
-
-      // Start audio level monitoring
-      monitorAudioLevel()
-    } catch (error) {
-      setVoiceState((prev) => ({
-        ...prev,
-        error: "Failed to start recording",
-      }))
-    }
-  }
-
-  const stopRecording = () => {
-    // Stop speech recognition
-    if (cleanupRecognitionRef.current) {
-      cleanupRecognitionRef.current()
-      cleanupRecognitionRef.current = null
-    }
-
-    // Stop media recorder
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      mediaRecorderRef.current.stop()
-      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop())
-    }
-
-    if (audioContextRef.current) {
-      audioContextRef.current.close()
-    }
-
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current)
-    }
-
-    // Send final transcript if we have one
-    if (currentTranscriptRef.current) {
-      onTranscript(currentTranscriptRef.current.trim())
-    }
-
-    setVoiceState((prev) => ({
-      ...prev,
-      isRecording: false,
-      isListening: false,
-      audioLevel: 0,
-    }))
-  }
-
-  const monitorAudioLevel = () => {
-    if (!analyserRef.current) return
+  // Audio level monitoring - simplified for react-speech-recognition
+  const monitorAudioLevel = useCallback(() => {
+    if (!analyserRef.current || !voiceState.isRecording) return
 
     const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount)
 
     const updateLevel = () => {
-      if (!analyserRef.current) return
+      if (!analyserRef.current || !voiceState.isRecording) {
+        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current)
+        return
+      }
 
       analyserRef.current.getByteFrequencyData(dataArray)
       const average = dataArray.reduce((a, b) => a + b) / dataArray.length
-      const normalizedLevel = Math.min(average / 128, 1)
+      const normalizedLevel = Math.min(average / 128, 1) // Normalize to 0-1
 
       setVoiceState((prev) => ({ ...prev, audioLevel: normalizedLevel }))
-
-      if (voiceState.isRecording) {
-        animationFrameRef.current = requestAnimationFrame(updateLevel)
-      }
+      animationFrameRef.current = requestAnimationFrame(updateLevel)
     }
 
-    updateLevel()
+    animationFrameRef.current = requestAnimationFrame(updateLevel)
+  }, [voiceState.isRecording])
+
+  // Effect to start/stop audio level monitoring
+  useEffect(() => {
+    if (listening) {
+      const setupAudioViz = async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+          currentMicrophoneStreamRef.current = stream
+          audioContextRef.current = new AudioContext()
+          analyserRef.current = audioContextRef.current.createAnalyser()
+          const source = audioContextRef.current.createMediaStreamSource(stream)
+          source.connect(analyserRef.current)
+          monitorAudioLevel()
+        } catch (error) {
+          console.error("Error setting up audio visualization:", error)
+        }
+      }
+      setupAudioViz()
+    } else {
+      // Cleanup audio visualization
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current)
+      if (audioContextRef.current) {
+        audioContextRef.current.close()
+        audioContextRef.current = null
+      }
+      if (currentMicrophoneStreamRef.current) {
+        currentMicrophoneStreamRef.current.getTracks().forEach(track => track.stop())
+        currentMicrophoneStreamRef.current = null
+      }
+      setVoiceState((prev) => ({ ...prev, audioLevel: 0 }))
+    }
+  }, [listening, monitorAudioLevel])
+
+  const startRecording = async () => {
+    if (browserSupportsSpeechRecognition && isActive) {
+      try {
+        // Ensure microphone permission is granted before starting recognition
+        await navigator.mediaDevices.getUserMedia({ audio: true })
+        setVoiceState((prev) => ({ ...prev, hasPermission: true }))
+        SpeechRecognition.startListening()
+        resetTranscript()
+      } catch (error) {
+        console.error("Failed to start recording:", error)
+        setVoiceState((prev) => ({
+          ...prev,
+          error: "Failed to start recording. Microphone access denied or unavailable.",
+          hasPermission: false,
+        }))
+      }
+    }
+  }
+
+  const stopRecording = () => {
+    SpeechRecognition.stopListening()
+    // onTranscript(finalTranscript.trim()) // Ensure final transcript is sent on stop
+    // resetTranscript() // Reset after sending
   }
 
   const toggleRecording = () => {
-    if (voiceState.isRecording) {
+    if (listening) {
       stopRecording()
     } else {
       startRecording()
     }
+  }
+
+  // Fallback if browser doesn't support speech recognition
+  if (!browserSupportsSpeechRecognition) {
+    return (
+      <Card className="border-amber-200 bg-amber-50">
+        <CardContent className="p-6 text-center space-y-4">
+          <MicOff className="h-12 w-12 mx-auto text-amber-700" />
+          <div>
+            <h3 className="font-semibold">Speech Recognition Not Supported</h3>
+            <p className="text-sm text-amber-700">
+              Your browser does not support speech recognition. Please try a different browser like Chrome or Edge.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   if (!voiceState.hasPermission) {
@@ -190,7 +199,7 @@ export function VoiceRecorder({ onTranscript, onStateChange, isActive }: VoiceRe
             <h3 className="font-semibold">Microphone Access Required</h3>
             <p className="text-sm text-muted-foreground">Please allow microphone access to use voice features</p>
           </div>
-          <Button onClick={checkMicrophonePermission}>
+          <Button onClick={startRecording} disabled={!isActive}>
             <Volume2 className="h-4 w-4 mr-2" />
             Enable Microphone
           </Button>
@@ -208,13 +217,13 @@ export function VoiceRecorder({ onTranscript, onStateChange, isActive }: VoiceRe
               onClick={toggleRecording}
               disabled={!isActive}
               size="lg"
-              variant={voiceState.isRecording ? "destructive" : "default"}
+              variant={listening ? "destructive" : "default"}
               className="h-16 w-16 rounded-full"
             >
-              {voiceState.isRecording ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
+              {listening ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
             </Button>
 
-            {voiceState.isRecording && (
+            {listening && (
               <div
                 className="absolute inset-0 rounded-full border-2 border-red-500 animate-pulse"
                 style={{
@@ -226,13 +235,13 @@ export function VoiceRecorder({ onTranscript, onStateChange, isActive }: VoiceRe
           </div>
 
           <div className="text-center">
-            <p className="font-medium">{voiceState.isRecording ? "Recording..." : "Click to start recording"}</p>
+            <p className="font-medium">{listening ? "Recording..." : "Click to start recording"}</p>
             <p className="text-sm text-muted-foreground">
-              {voiceState.isListening ? "Listening for your response" : "Ready to record"}
+              {listening ? "Listening for your response" : "Ready to record"}
             </p>
           </div>
 
-          {voiceState.isRecording && (
+          {listening && (
             <div className="w-full max-w-xs">
               <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div
