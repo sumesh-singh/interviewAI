@@ -1,4 +1,4 @@
-import HeroSection from "../hero-section"
+import HeroSection from "@/components/hero-section"
 import Header from "@/components/header"
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
 import { OfflineIndicator } from "@/components/offline-indicator"
