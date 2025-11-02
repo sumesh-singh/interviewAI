@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import PulsingBorderShader from "./components/pulsing-border-shader"
+import PulsingBorderShader from "./pulsing-border-shader"
 import { ArrowRight, Sparkles } from "lucide-react"
 
 export default function Component() {
