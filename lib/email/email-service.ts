@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { nanoid } from 'nanoid'
+import { type SupabaseClient } from '@supabase/supabase-js'
 
 export interface VerificationToken {
   id: string
@@ -11,7 +12,11 @@ export interface VerificationToken {
 }
 
 export class EmailVerificationService {
-  private supabase = createClient()
+  private supabase: SupabaseClient
+
+  constructor() {
+    this.supabase = createClient()
+  }
 
   /**
    * Generate a new verification token that expires in 1 hour
@@ -20,7 +25,7 @@ export class EmailVerificationService {
     const token = nanoid(32)
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour from now
 
-    const { error } = await (await this.supabase)
+    const { error } = await this.supabase
       .from('email_verification_tokens')
       .insert({
         email,
@@ -39,7 +44,7 @@ export class EmailVerificationService {
    * Verify a token and mark it as used
    */
   async verifyToken(token: string): Promise<{ valid: boolean; email?: string; error?: string }> {
-    const { data, error } = await (await this.supabase)
+    const { data, error } = await this.supabase
       .from('email_verification_tokens')
       .select('*')
       .eq('token', token)
@@ -63,7 +68,7 @@ export class EmailVerificationService {
     }
 
     // Mark token as used
-    const { error: updateError } = await (await this.supabase)
+    const { error: updateError } = await this.supabase
       .from('email_verification_tokens')
       .update({ used_at: now.toISOString() })
       .eq('token', token)
@@ -79,7 +84,7 @@ export class EmailVerificationService {
    * Check if there's a pending (unused, unexpired) verification token for an email
    */
   async hasPendingVerification(email: string): Promise<boolean> {
-    const { data, error } = await (await this.supabase)
+    const { data, error } = await this.supabase
       .from('email_verification_tokens')
       .select('expires_at, used_at')
       .eq('email', email)
@@ -95,7 +100,7 @@ export class EmailVerificationService {
    * Invalidate all existing tokens for an email (useful before creating a new one)
    */
   async invalidateExistingTokens(email: string): Promise<void> {
-    await (await this.supabase)
+    await this.supabase
       .from('email_verification_tokens')
       .update({ used_at: new Date().toISOString() })
       .eq('email', email)
