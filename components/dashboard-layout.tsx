@@ -83,6 +83,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return "U"
   }
 
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode)
+    document.documentElement.classList.toggle('dark')
+  }
+
+  const isActiveRoute = (href: string) => {
+    if (href === "/dashboard") {
+      return pathname === href
+    }
+    return pathname.startsWith(href)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile sidebar overlay */}
