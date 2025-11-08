@@ -43,10 +43,11 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterForm) => {
     setIsLoading(true)
     setError(null)
+    setSuccess(null)
     const supabase = createClient()
 
     try {
-      // Create user account without email confirmation (we'll handle this manually)
+      // Create user account
       const { error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -60,24 +61,46 @@ export default function RegisterPage() {
 
       if (error) throw error
 
-      // Send custom verification email with 2-minute expiration
-      const verificationResponse = await fetch('/api/auth/send-verification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: data.email }),
-      })
+      setSuccess("Account created successfully! Check your email for verification.")
 
-      const verificationData = await verificationResponse.json()
+      // Send custom verification email
+      try {
+        const verificationResponse = await fetch('/api/auth/send-verification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: data.email }),
+        })
 
-      if (!verificationData.success) {
-        console.warn('Failed to send verification email:', verificationData.error)
-        // Still proceed to success page, user can resend from there
+        const verificationData = await verificationResponse.json()
+
+        if (!verificationData.success) {
+          console.warn('Failed to send verification email:', verificationData.error)
+        }
+      } catch (verificationError) {
+        console.warn('Verification email error:', verificationError)
       }
 
-      // Redirect to verification page instead of generic success page
-      router.push("/auth/verify")
+      setTimeout(() => {
+        router.push("/auth/verify")
+      }, 2000)
     } catch (error: any) {
-      setError(error.message || "An error occurred during registration")
+      let errorMessage = "An error occurred during registration"
+
+      if (error.message?.includes("User already registered")) {
+        errorMessage = "An account with this email already exists. Please sign in instead."
+      } else if (error.message?.includes("weak password")) {
+        errorMessage = "Password is too weak. Please choose a stronger password with uppercase, lowercase, and numbers."
+      } else if (error.message?.includes("invalid email")) {
+        errorMessage = "Please enter a valid email address."
+      } else if (error.message?.includes("rate limit")) {
+        errorMessage = "Too many registration attempts. Please wait a moment and try again."
+      } else if (error.message?.includes("network")) {
+        errorMessage = "Network error. Please check your connection and try again."
+      } else {
+        errorMessage = error.message || errorMessage
+      }
+
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
