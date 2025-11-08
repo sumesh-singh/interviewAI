@@ -155,19 +155,42 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </Button>
 
           <div className="flex items-center space-x-4">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="hidden sm:flex">
+              <PlayCircle className="w-4 h-4 mr-2" />
               Start Interview
+            </Button>
+            <Button variant="ghost" size="sm" onClick={toggleDarkMode} className="p-2">
+              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center p-0"
+                  className="relative h-8 w-8 rounded-full"
                 >
-                  <span className="text-white text-sm font-medium">{getUserInitials()}</span>
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={userProfile?.avatar_url} alt={userProfile?.full_name || user?.email} />
+                    <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+                      {getUserInitials()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-green-500 border-2 border-white"></span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <div className="flex items-center justify-start gap-2 p-2">
+                  <div className="flex flex-col space-y-1 leading-none">
+                    {userProfile?.full_name && (
+                      <p className="font-medium">{userProfile.full_name}</p>
+                    )}
+                    {user?.email && (
+                      <p className="w-[200px] truncate text-sm text-muted-foreground">
+                        {user.email}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}>
                   <User className="w-4 h-4 mr-2" />
                   Profile
@@ -176,7 +199,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   <Settings className="w-4 h-4 mr-2" />
                   Settings
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout
                 </DropdownMenuItem>
