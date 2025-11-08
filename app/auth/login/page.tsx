@@ -75,15 +75,38 @@ export default function LoginPage() {
   }
 
   const handleGoogleLogin = async () => {
+    setIsGoogleLoading(true)
+    setError(null)
+    setSuccess(null)
+
     try {
-      setError(null)
       const result = await googleOAuthService.signInWithGoogle()
       if (!result.success && result.error) {
-        setError(result.error)
+        let errorMessage = result.error
+
+        if (result.error?.includes("popup")) {
+          errorMessage = "Google sign-in popup was blocked. Please allow popups and try again."
+        } else if (result.error?.includes("access_denied")) {
+          errorMessage = "Google sign-in was cancelled or access was denied."
+        } else if (result.error?.includes("network")) {
+          errorMessage = "Network error during Google sign-in. Please check your connection and try again."
+        }
+
+        setError(errorMessage)
       }
-      // OAuth service will handle the redirect, no need to do anything here
+      // OAuth service will handle the redirect
     } catch (error: any) {
-      setError(error.message || 'Failed to sign in with Google')
+      let errorMessage = "Failed to sign in with Google"
+
+      if (error.message?.includes("popup")) {
+        errorMessage = "Google sign-in popup was blocked. Please allow popups and try again."
+      } else if (error.message?.includes("network")) {
+        errorMessage = "Network error during Google sign-in. Please check your connection and try again."
+      }
+
+      setError(errorMessage)
+    } finally {
+      setIsGoogleLoading(false)
     }
   }
 
