@@ -305,6 +305,7 @@ export default function RegisterPage() {
                   type={showConfirmPassword ? "text" : "password"}
                   placeholder="Confirm your password"
                   className="pl-10 pr-10"
+                  disabled={isLoading || isGoogleLoading}
                   {...register("confirmPassword", {
                     required: "Please confirm your password",
                     validate: (value) => value === password || "Passwords do not match",
@@ -314,8 +315,9 @@ export default function RegisterPage() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent disabled:opacity-50"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  disabled={isLoading || isGoogleLoading}
                 >
                   {showConfirmPassword ? (
                     <EyeOff className="h-4 w-4 text-muted-foreground" />
