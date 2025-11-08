@@ -3,11 +3,13 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Home, User, BarChart3, Settings, PlayCircle, BookOpen, Menu, X, LogOut } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Home, User, BarChart3, Settings, PlayCircle, BookOpen, Menu, X, LogOut, Moon, Sun } from "lucide-react"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -17,7 +19,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [userProfile, setUserProfile] = useState<any>(null)
+  const [isDarkMode, setIsDarkMode] = useState(false)
   const router = useRouter()
+  const pathname = usePathname()
   const supabase = createClient()
 
   useEffect(() => {
@@ -79,6 +83,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return "U"
   }
 
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode)
+    document.documentElement.classList.toggle('dark')
+  }
+
+  const isActiveRoute = (href: string) => {
+    if (href === "/dashboard") {
+      return pathname === href
+    }
+    return pathname.startsWith(href)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile sidebar overlay */}
@@ -101,17 +117,31 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
         <nav className="mt-8 px-4">
           <ul className="space-y-2">
-            {navigation.map((item) => (
-              <li key={item.name}>
-                <a
-                  href={item.href}
-                  className="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  <item.icon className="w-5 h-5 mr-3" />
-                  {item.name}
-                </a>
-              </li>
-            ))}
+            {navigation.map((item) => {
+              const isActive = isActiveRoute(item.href)
+              return (
+                <li key={item.name}>
+                  <a
+                    href={item.href}
+                    className={`flex items-center px-4 py-3 rounded-lg transition-all duration-200 ${
+                      isActive
+                        ? "bg-blue-50 text-blue-700 border-r-2 border-blue-600"
+                        : "text-gray-700 hover:bg-gray-100"
+                    }`}
+                  >
+                    <item.icon className={`w-5 h-5 mr-3 ${isActive ? "text-blue-600" : ""}`} />
+                    <span className={`font-medium ${isActive ? "text-blue-700" : ""}`}>
+                      {item.name}
+                    </span>
+                    {isActive && (
+                      <Badge variant="secondary" className="ml-auto text-xs">
+                        Active
+                      </Badge>
+                    )}
+                  </a>
+                </li>
+              )
+            })}
           </ul>
         </nav>
       </div>
@@ -125,19 +155,42 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </Button>
 
           <div className="flex items-center space-x-4">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="hidden sm:flex">
+              <PlayCircle className="w-4 h-4 mr-2" />
               Start Interview
+            </Button>
+            <Button variant="ghost" size="sm" onClick={toggleDarkMode} className="p-2">
+              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center p-0"
+                  className="relative h-8 w-8 rounded-full"
                 >
-                  <span className="text-white text-sm font-medium">{getUserInitials()}</span>
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={userProfile?.avatar_url} alt={userProfile?.full_name || user?.email} />
+                    <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+                      {getUserInitials()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full bg-green-500 border-2 border-white"></span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <div className="flex items-center justify-start gap-2 p-2">
+                  <div className="flex flex-col space-y-1 leading-none">
+                    {userProfile?.full_name && (
+                      <p className="font-medium">{userProfile.full_name}</p>
+                    )}
+                    {user?.email && (
+                      <p className="w-[200px] truncate text-sm text-muted-foreground">
+                        {user.email}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}>
                   <User className="w-4 h-4 mr-2" />
                   Profile
@@ -146,7 +199,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   <Settings className="w-4 h-4 mr-2" />
                   Settings
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout
                 </DropdownMenuItem>
