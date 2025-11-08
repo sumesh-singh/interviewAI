@@ -38,19 +38,37 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true)
     setError(null)
+    setSuccess(null)
     const supabase = createClient()
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
-        //redirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/dashboard`,
       })
 
       if (error) throw error
-      router.push("/dashboard")
+
+      setSuccess("Login successful! Redirecting to dashboard...")
+      setTimeout(() => {
+        router.push("/dashboard")
+      }, 1000)
     } catch (error: any) {
-      setError(error.message || "An error occurred during sign in")
+      let errorMessage = "An error occurred during sign in"
+
+      if (error.message?.includes("Invalid login credentials")) {
+        errorMessage = "Invalid email or password. Please check your credentials and try again."
+      } else if (error.message?.includes("Email not confirmed")) {
+        errorMessage = "Please confirm your email address before signing in. Check your inbox for the confirmation link."
+      } else if (error.message?.includes("Too many requests")) {
+        errorMessage = "Too many login attempts. Please wait a moment and try again."
+      } else if (error.message?.includes("network")) {
+        errorMessage = "Network error. Please check your connection and try again."
+      } else {
+        errorMessage = error.message || errorMessage
+      }
+
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
