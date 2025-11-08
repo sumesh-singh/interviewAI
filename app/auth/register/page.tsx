@@ -243,6 +243,7 @@ export default function RegisterPage() {
                   type="email"
                   placeholder="Enter your email"
                   className="pl-10"
+                  disabled={isLoading || isGoogleLoading}
                   {...register("email", {
                     required: "Email is required",
                     pattern: {
