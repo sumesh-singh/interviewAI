@@ -331,8 +331,19 @@ export default function RegisterPage() {
 
             {error && <p className="text-sm text-destructive">{error}</p>}
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Creating account..." : "Create account"}
+            <Button
+              type="submit"
+              className="w-full relative"
+              disabled={isLoading || isGoogleLoading}
+            >
+              {isLoading ? (
+                <>
+                  <LoadingSpinner size="sm" variant="muted" className="mr-2" />
+                  Creating account...
+                </>
+              ) : (
+                "Create account"
+              )}
             </Button>
           </form>
 
