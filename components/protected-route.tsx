@@ -5,6 +5,7 @@ import type React from "react"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import LoadingSpinner from "./loading-spinner"
+import { createClient } from "@/lib/supabase/client"
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -13,22 +14,41 @@ interface ProtectedRouteProps {
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const router = useRouter()
+  const supabase = createClient()
 
   useEffect(() => {
-    // TODO: Replace with actual authentication check
-    const checkAuth = () => {
-      const token = localStorage.getItem("auth_token")
-      if (!token) {
-        router.push("/auth/login")
-        return
-      }
+    const checkAuth = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser()
 
-      // TODO: Validate token with backend
-      setIsAuthenticated(true)
+        if (error || !user) {
+          router.push("/auth/login")
+          return
+        }
+
+        setIsAuthenticated(true)
+      } catch (error) {
+        console.error("Authentication check failed:", error)
+        router.push("/auth/login")
+      }
     }
 
     checkAuth()
-  }, [router])
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === 'SIGNED_OUT' || !session?.user) {
+          setIsAuthenticated(false)
+          router.push("/auth/login")
+        } else if (event === 'SIGNED_IN' && session?.user) {
+          setIsAuthenticated(true)
+        }
+      }
+    )
+
+    return () => subscription.unsubscribe()
+  }, [router, supabase])
 
   if (isAuthenticated === null) {
     return (
