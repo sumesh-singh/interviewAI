@@ -189,6 +189,7 @@ export default function LoginPage() {
                   type="email"
                   placeholder="Enter your email"
                   className="pl-10"
+                  disabled={isLoading || isGoogleLoading}
                   {...register("email", {
                     required: "Email is required",
                     pattern: {
@@ -210,6 +211,7 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
                   className="pl-10 pr-10"
+                  disabled={isLoading || isGoogleLoading}
                   {...register("password", {
                     required: "Password is required",
                     minLength: {
@@ -222,8 +224,9 @@ export default function LoginPage() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent disabled:opacity-50"
                   onClick={() => setShowPassword(!showPassword)}
+                  disabled={isLoading || isGoogleLoading}
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4 text-muted-foreground" />
@@ -240,9 +243,19 @@ export default function LoginPage() {
                 Forgot password?
               </Link>
             </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign in"}
+            <Button
+              type="submit"
+              className="w-full relative"
+              disabled={isLoading || isGoogleLoading}
+            >
+              {isLoading ? (
+                <>
+                  <LoadingSpinner size="sm" variant="muted" className="mr-2" />
+                  Signing in...
+                </>
+              ) : (
+                "Sign in"
+              )}
             </Button>
           </form>
 
