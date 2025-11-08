@@ -221,6 +221,7 @@ export default function RegisterPage() {
                   type="text"
                   placeholder="Enter your full name"
                   className="pl-10"
+                  disabled={isLoading || isGoogleLoading}
                   {...register("name", {
                     required: "Name is required",
                     minLength: {
