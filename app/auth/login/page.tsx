@@ -10,10 +10,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Eye, EyeOff, Mail, Lock } from "lucide-react"
+import { Eye, EyeOff, Mail, Lock, AlertCircle, CheckCircle } from "lucide-react"
 import AuthLayout from "@/components/auth-layout"
 import GoogleOAuthConsent from "@/components/google-oauth-consent"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import LoadingSpinner from "@/components/loading-spinner"
 
 interface LoginForm {
   email: string
