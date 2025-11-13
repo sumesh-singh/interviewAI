@@ -14,7 +14,7 @@ import { Eye, EyeOff, Mail, Lock, AlertCircle, CheckCircle } from "lucide-react"
 import AuthLayout from "@/components/auth-layout"
 import GoogleOAuthConsent from "@/components/google-oauth-consent"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import LoadingSpinner from "@/components/loading-spinner"
+import { LoadingSpinner } from "@/components/loading-spinner"
 
 interface LoginForm {
   email: string
@@ -260,7 +260,7 @@ export default function LoginPage() {
           </form>
 
           <div className="text-center text-sm mt-4">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link href="/auth/register" className="text-primary hover:underline">
               Sign up
             </Link>

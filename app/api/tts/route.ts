@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ElevenLabsClient, play } from 'elevenlabs'
+import { ElevenLabsClient, play } from 'elevenlabs-node'
 
 // Initialize ElevenLabs client with API key from environment variables
 const elevenlabs = new ElevenLabsClient({
