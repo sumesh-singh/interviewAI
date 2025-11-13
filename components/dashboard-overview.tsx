@@ -1,4 +1,5 @@
 import StatsCard from "./stats-card"
+import JobRecommendations from "./job-recommendations"
 import { Button } from "@/components/ui/button"
 import { PlayCircle, BarChart3, Clock, TrendingUp, Calendar, Star } from "lucide-react"
 import type { UserStats, RecentSession } from "@/types/dashboard"
@@ -14,7 +15,7 @@ export default function DashboardOverview({ stats, recentSessions }: DashboardOv
       {/* Welcome section */}
       <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-6 text-white">
         <h1 className="text-2xl font-bold mb-2">Welcome back, John!</h1>
-        <p className="text-purple-100 mb-4">Ready to ace your next interview? Let's continue your preparation.</p>
+        <p className="text-purple-100 mb-4">Ready to ace your next interview? Let&apos;s continue your preparation.</p>
         <Button className="bg-white text-purple-600 hover:bg-gray-100">
           <PlayCircle className="w-4 h-4 mr-2" />
           Start New Interview
@@ -93,6 +94,9 @@ export default function DashboardOverview({ stats, recentSessions }: DashboardOv
           </div>
         </div>
       </div>
+
+      {/* Job Recommendations */}
+      <JobRecommendations />
     </div>
   )
 }

@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists and is verified
-    const supabase = createClient()
+    const supabase = await createClient()
     const { data: user } = await supabase
       .from('auth.users')
       .select('email_confirmed_at')

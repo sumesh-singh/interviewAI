@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ElevenLabsClient, play } from 'elevenlabs'
+
+// Note: Using elevenlabs-node package
+const ElevenLabs = require('elevenlabs-node')
 
 // Initialize ElevenLabs client with API key from environment variables
-const elevenlabs = new ElevenLabsClient({
+const elevenlabs = new ElevenLabs({
   apiKey: process.env.ELEVENLABS_API_KEY, 
-});
+})
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,16 +17,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Default voice if not provided
-    const selectedVoiceId = voiceId || 'pNInz6obpgDQGXPRmrWg' // You can set your preferred default voice ID here
+    const selectedVoiceId = voiceId || 'pNInz6obpgDQGcFmaJgB' // Default voice 'Adam'
 
-    const audioStream = await elevenlabs.generate({
-      voice_id: selectedVoiceId,
-      text,
-      model_id: "eleven_multilingual_v2", // Or another appropriate model
-      output_format: "mp3_22050_32",
+    const audioStream = await elevenlabs.textToSpeechStream({
+      voiceId: selectedVoiceId,
+      textInput: text,
+      modelId: "eleven_multilingual_v2",
+      stability: 0.5,
+      similarityBoost: 0.75,
     });
 
-    const response = new NextResponse(audioStream as any, {
+    const response = new NextResponse(audioStream, {
       headers: {
         'Content-Type': 'audio/mpeg',
         'Cache-Control': 'no-cache, no-store, must-revalidate',

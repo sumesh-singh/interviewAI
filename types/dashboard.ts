@@ -35,3 +35,28 @@ export interface ProfileData {
     targetCompanies: string[]
   }
 }
+
+export interface JobRecommendation {
+  id: string
+  company: string
+  role: string
+  location: string
+  remote: "remote" | "hybrid" | "on-site"
+  seniority: "entry" | "mid" | "senior" | "lead"
+  tags: string[]
+  description: string
+  applyUrl: string
+  postedDate: string
+  matchScore: number
+}
+
+export interface JobsResponse {
+  jobs: JobRecommendation[]
+  total: number
+}
+
+export interface JobFilters {
+  location?: string
+  remote?: "remote" | "hybrid" | "on-site" | "all"
+  seniority?: "entry" | "mid" | "senior" | "lead" | "all"
+}
