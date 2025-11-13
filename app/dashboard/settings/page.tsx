@@ -32,7 +32,7 @@ import {
   EyeOff
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
-import LoadingSpinner from "@/components/loading-spinner"
+import { LoadingSpinner } from "@/components/loading-spinner"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Slider } from "@/components/ui/slider"
 import type { ScoringWeights } from "@/types/interview"
@@ -109,7 +109,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetchSettings()
-  }, [])
+  }, [fetchSettings])
 
   const fetchSettings = async () => {
     try {
