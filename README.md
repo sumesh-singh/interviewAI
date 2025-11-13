@@ -15,6 +15,7 @@ The AI Voice Interview Assistant is a professional-grade Progressive Web App (PW
 - **Interview Templates**: Includes 7 pre-built templates for different roles that can be customized.
 - **Progressive Web App (PWA)**: Offers full offline functionality and can be installed on mobile and desktop devices.
 - **Progress Tracking & Analytics**: Provides a comprehensive analytics dashboard with performance tracking and goal-setting features.
+- **Session Scheduling**: Schedule interview practice sessions with optional Google Calendar integration for automatic synchronization.
 
 ## Tech Stack
 
@@ -49,18 +50,24 @@ The AI Voice Interview Assistant is a professional-grade Progressive Web App (PW
    ```
    Then, add your `OPENAI_API_KEY` to the `.env.local` file.
 
-3. **Generate PWA icons**
+3. **Setup Google Calendar Integration (Optional)**
+   For optional Google Calendar sync, see [CALENDAR_INTEGRATION_SETUP.md](./CALENDAR_INTEGRATION_SETUP.md) for detailed configuration steps.
+
+4. **Generate PWA icons**
    ```bash
    node scripts/generate-icons.js
    ```
    Use the generated SVG to create the required icon files.
 
-4. **Run the development server**
+5. **Run the database migrations**
+   - For scheduling support, run the migrations from `supabase/migrations/` in your Supabase SQL editor.
+
+6. **Run the development server**
    ```bash
    npm run dev
    ```
 
-5. **Build for production**
+7. **Build for production**
    ```bash
    npm run build
    npm start
