@@ -1,4 +1,5 @@
 import type { InterviewFeedback } from './openai'
+import type { ScoringWeights } from '@/types/interview'
 
 export interface DetailedScore {
   overallScore: number
@@ -42,13 +43,75 @@ export class ScoringSystem {
     return ScoringSystem.instance
   }
 
+  // Default scoring weights
+  public static getDefaultWeights(): ScoringWeights {
+    return {
+      technicalAccuracy: 0.15,
+      communicationSkills: 0.20,
+      problemSolving: 0.15,
+      confidence: 0.10,
+      relevance: 0.15,
+      clarity: 0.10,
+      structure: 0.10,
+      examples: 0.05
+    }
+  }
+
+  // Get preset weights for specific industries/roles
+  public static getPresetWeights(preset: string): ScoringWeights | null {
+    const presets: Record<string, ScoringWeights> = {
+      'technical': {
+        technicalAccuracy: 0.30,
+        communicationSkills: 0.15,
+        problemSolving: 0.25,
+        confidence: 0.08,
+        relevance: 0.10,
+        clarity: 0.07,
+        structure: 0.03,
+        examples: 0.02
+      },
+      'behavioral': {
+        technicalAccuracy: 0.05,
+        communicationSkills: 0.25,
+        problemSolving: 0.15,
+        confidence: 0.15,
+        relevance: 0.15,
+        clarity: 0.12,
+        structure: 0.10,
+        examples: 0.03
+      },
+      'product-manager': {
+        technicalAccuracy: 0.10,
+        communicationSkills: 0.20,
+        problemSolving: 0.25,
+        confidence: 0.12,
+        relevance: 0.15,
+        clarity: 0.10,
+        structure: 0.05,
+        examples: 0.03
+      },
+      'leadership': {
+        technicalAccuracy: 0.08,
+        communicationSkills: 0.22,
+        problemSolving: 0.18,
+        confidence: 0.18,
+        relevance: 0.12,
+        clarity: 0.10,
+        structure: 0.08,
+        examples: 0.04
+      }
+    }
+    return presets[preset] || null
+  }
+
   // Main scoring method
   public calculateDetailedScore(
     question: string,
     response: string,
     duration: number,
     criteria: ScoringCriteria,
-    aiFeedback?: InterviewFeedback
+    aiFeedback?: InterviewFeedback,
+    customWeights?: ScoringWeights
   ): DetailedScore {
     const breakdown = this.calculateBreakdownScores(
       question, 
@@ -58,7 +121,7 @@ export class ScoringSystem {
       aiFeedback
     )
 
-    const overallScore = this.calculateOverallScore(breakdown)
+    const overallScore = this.calculateOverallScore(breakdown, customWeights)
     const levelAssessment = this.assessLevel(breakdown, criteria.role)
     
     return {
@@ -321,18 +384,9 @@ export class ScoringSystem {
     return Math.min(100, (baseScore + specificityBonus) * typeMultiplier)
   }
 
-  private calculateOverallScore(breakdown: DetailedScore['breakdown']): number {
-    // Weighted average based on importance
-    const weights = {
-      technicalAccuracy: 0.15,
-      communicationSkills: 0.20,
-      problemSolving: 0.15,
-      confidence: 0.10,
-      relevance: 0.15,
-      clarity: 0.10,
-      structure: 0.10,
-      examples: 0.05
-    }
+  private calculateOverallScore(breakdown: DetailedScore['breakdown'], customWeights?: ScoringWeights): number {
+    // Use custom weights if provided, otherwise use defaults
+    const weights = customWeights || ScoringSystem.getDefaultWeights()
 
     let weightedSum = 0
     let totalWeight = 0

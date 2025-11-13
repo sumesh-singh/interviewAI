@@ -14,7 +14,7 @@ import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle } from "lucide-
 import AuthLayout from "@/components/auth-layout"
 import GoogleOAuthConsent from "@/components/google-oauth-consent"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import LoadingSpinner from "@/components/loading-spinner"
+import { LoadingSpinner } from "@/components/loading-spinner"
 
 interface RegisterForm {
   name: string

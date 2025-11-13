@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Home, User, BarChart3, Settings, PlayCircle, BookOpen, Menu, X, LogOut, Moon, Sun } from "lucide-react"
+import { Home, User, BarChart3, Settings, PlayCircle, BookOpen, Menu, X, LogOut, Moon, Sun, Calendar } from "lucide-react"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -62,7 +62,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "Practice", href: "/dashboard/practice", icon: PlayCircle },
+    { name: "Schedule", href: "/dashboard/schedule", icon: Calendar },
     { name: "Progress", href: "/dashboard/progress", icon: BarChart3 },
+    { name: "Questions", href: "/dashboard/questions", icon: Library },
     { name: "Resources", href: "/dashboard/resources", icon: BookOpen },
     { name: "Profile", href: "/dashboard/profile", icon: User },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },

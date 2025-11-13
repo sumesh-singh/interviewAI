@@ -8,7 +8,7 @@ interface LoadingSpinnerProps {
   label?: string
 }
 
-export default function LoadingSpinner({
+export function LoadingSpinner({
   size = "md",
   variant = "primary",
   className,
