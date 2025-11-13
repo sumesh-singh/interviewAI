@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -16,6 +16,7 @@ interface InterviewSetupProps {
     type: "behavioral" | "technical" | "mixed"
     duration: number
     difficulty: "easy" | "medium" | "hard"
+    questionBankId?: string
   }) => void
   onStartTemplate?: (template: InterviewTemplate) => void
 }
@@ -24,10 +25,17 @@ export function InterviewSetup({ onStartInterview, onStartTemplate }: InterviewS
   const [type, setType] = useState<"behavioral" | "technical" | "mixed">("mixed")
   const [duration, setDuration] = useState<number>(30)
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium")
+  const [questionBankId, setQuestionBankId] = useState<string>("")
+  const { questionBanks, loading } = useQuestionBanks()
   const [showTemplates, setShowTemplates] = useState(false)
 
   const handleStart = () => {
-    onStartInterview({ type, duration, difficulty })
+    onStartInterview({ 
+      type, 
+      duration, 
+      difficulty,
+      questionBankId: questionBankId || undefined
+    })
   }
 
   const handleSelectTemplate = (template: InterviewTemplate) => {
@@ -227,6 +235,45 @@ export function InterviewSetup({ onStartInterview, onStartTemplate }: InterviewS
           </Button>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5" />
+            Question Bank (Optional)
+          </CardTitle>
+          <CardDescription>
+            Use questions from your custom question bank
+            {!loading && questionBanks.length === 0 && (
+              <span className="block mt-1">
+                <Link href="/dashboard/questions" className="text-purple-600 hover:underline">
+                  Create your first question bank →
+                </Link>
+              </span>
+            )}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Select value={questionBankId} onValueChange={setQuestionBankId} disabled={loading || questionBanks.length === 0}>
+            <SelectTrigger>
+              <SelectValue placeholder="Use AI-generated questions" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Use AI-generated questions</SelectItem>
+              {questionBanks.map((bank) => (
+                <SelectItem key={bank.id} value={bank.id}>
+                  {bank.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
+
+      <Button onClick={handleStart} className="w-full" size="lg">
+        <Play className="h-5 w-5 mr-2" />
+        Start Interview Session
+      </Button>
     </div>
   )
 }

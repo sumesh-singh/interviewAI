@@ -59,13 +59,34 @@ export default function InterviewPage() {
     setScoringWeights(offlineWeights)
   }
 
-  const handleStartInterview = (config: {
+  const handleStartInterview = async (config: {
     type: "behavioral" | "technical" | "mixed"
     duration: number
     difficulty: "easy" | "medium" | "hard"
+    questionBankId?: string
   }) => {
-    // Filter questions based on type and difficulty
     let filteredQuestions = mockQuestions
+
+    // If a question bank is selected, fetch its questions
+    if (config.questionBankId) {
+      try {
+        const { sessionManager } = await import("@/lib/session-manager")
+        const session = await sessionManager.createSession({
+          type: config.type,
+          duration: config.duration,
+          difficulty: config.difficulty,
+          questionBankId: config.questionBankId
+        })
+        setCurrentSession(session)
+        setCompletedSession(null)
+        return
+      } catch (err) {
+        console.error("Failed to load question bank:", err)
+      }
+    }
+
+    // Filter questions based on type and difficulty
+    filteredQuestions = mockQuestions
       .filter((q) => {
         if (config.type === "mixed") return true
         return q.type === config.type
