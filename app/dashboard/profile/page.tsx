@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { User, Mail, Calendar, Award, TrendingUp, Edit, Camera, Upload } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
-import LoadingSpinner from "@/components/loading-spinner"
+import { LoadingSpinner } from "@/components/loading-spinner"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface ProfileForm {
@@ -46,7 +46,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     fetchProfile()
-  }, [])
+  }, [fetchProfile])
 
   const fetchProfile = async () => {
     try {

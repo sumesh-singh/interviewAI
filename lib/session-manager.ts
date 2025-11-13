@@ -2,6 +2,9 @@ import { nanoid } from 'nanoid'
 import { offlineStorage, type StoredSession } from './offline-storage'
 import { interviewTemplates } from '@/data/interview-templates'
 import { openAIService } from './openai'
+import { analyticsService } from './analytics-service'
+import { adaptiveDifficultyEngine, type AdaptiveRecommendation } from './adaptive-difficulty-engine'
+import { scoringSystem, type DetailedScore } from './scoring-system'
 import type { InterviewSession, InterviewQuestion } from '@/types/interview'
 
 export interface SessionCreateParams {
@@ -11,6 +14,7 @@ export interface SessionCreateParams {
   difficulty: 'easy' | 'medium' | 'hard'
   duration: number
   customQuestions?: InterviewQuestion[]
+  questionBankId?: string
 }
 
 export class SessionManager {
@@ -31,7 +35,10 @@ export class SessionManager {
     let questions: InterviewQuestion[] = []
 
     try {
-      if (params.templateId) {
+      if (params.questionBankId) {
+        // Use questions from question bank
+        questions = await this.fetchQuestionsFromBank(params.questionBankId)
+      } else if (params.templateId) {
         // Use template questions
         const template = interviewTemplates.find(t => t.id === params.templateId)
         if (template) {
@@ -97,6 +104,33 @@ export class SessionManager {
     } catch (error) {
       console.error('Failed to create session:', error)
       throw error
+    }
+  }
+
+  // Fetch questions from question bank
+  private async fetchQuestionsFromBank(bankId: string): Promise<InterviewQuestion[]> {
+    try {
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      
+      const { data, error } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('question_bank_id', bankId)
+      
+      if (error) throw error
+      
+      return data.map(q => ({
+        id: q.id,
+        type: q.type as 'behavioral' | 'technical' | 'situational',
+        difficulty: q.difficulty as 'easy' | 'medium' | 'hard',
+        question: q.question,
+        followUp: q.follow_up,
+        timeLimit: q.time_limit
+      }))
+    } catch (error) {
+      console.error('Failed to fetch questions from bank:', error)
+      return []
     }
   }
 
@@ -222,6 +256,160 @@ export class SessionManager {
       console.error('Failed to delete session:', error)
       return false
     }
+  }
+
+  // Get adaptive configuration recommendation
+  public getAdaptiveConfig(userId: string): AdaptiveRecommendation | null {
+    return adaptiveDifficultyEngine.generateRecommendation(userId)
+  }
+
+  // Create session with adaptive recommendation
+  public async createAdaptiveSession(
+    userId: string,
+    params: Omit<SessionCreateParams, 'type' | 'difficulty'> & {
+      useRecommendation?: boolean
+      userChoice?: {
+        type: 'behavioral' | 'technical' | 'mixed'
+        difficulty: 'easy' | 'medium' | 'hard'
+      }
+    }
+  ): Promise<{ session: InterviewSession; recommendation: AdaptiveRecommendation | null }> {
+    const recommendation = this.getAdaptiveConfig(userId)
+    
+    let type: 'behavioral' | 'technical' | 'mixed'
+    let difficulty: 'easy' | 'medium' | 'hard'
+
+    if (params.useRecommendation && recommendation) {
+      type = recommendation.recommendedType
+      difficulty = recommendation.recommendedDifficulty
+    } else if (params.userChoice) {
+      type = params.userChoice.type
+      difficulty = params.userChoice.difficulty
+    } else {
+      // Default fallback
+      type = 'mixed'
+      difficulty = 'medium'
+    }
+
+    const session = await this.createSession({
+      ...params,
+      type,
+      difficulty
+    })
+
+    // Record user choice if we have a recommendation
+    if (recommendation) {
+      adaptiveDifficultyEngine.recordUserChoice(userId, recommendation, { type, difficulty })
+    }
+
+    return { session, recommendation }
+  }
+
+  // Complete session with performance tracking
+  public completeSession(
+    userId: string,
+    sessionId: string,
+    role?: string
+  ): {
+    detailedScore: DetailedScore | null
+    sessionStats: ReturnType<typeof this.getSessionStats> | null
+  } | null {
+    const storedSession = offlineStorage.getSession(sessionId)
+    if (!storedSession) return null
+
+    const sessionStats = this.getSessionStats(sessionId)
+    if (!sessionStats) return null
+
+    // Calculate detailed scores for each response
+    const detailedScores: DetailedScore[] = []
+    
+    storedSession.responses.forEach((response, index) => {
+      if (index < storedSession.session.questions.length) {
+        const question = storedSession.session.questions[index]
+        const criteria = {
+          questionType: question.type,
+          role: role || 'General',
+          difficulty: question.difficulty,
+          expectedDuration: question.timeLimit || 120,
+          keywordWeights: {}
+        }
+
+        const detailedScore = scoringSystem.calculateDetailedScore(
+          question.question,
+          response.response,
+          response.duration,
+          criteria
+        )
+
+        detailedScores.push(detailedScore)
+      }
+    })
+
+    // Calculate overall session score
+    const overallDetailedScore: DetailedScore = detailedScores.length > 0 ? {
+      overallScore: Math.round(detailedScores.reduce((sum, score) => sum + score.overallScore, 0) / detailedScores.length),
+      breakdown: detailedScores.reduce((acc, score) => {
+        Object.entries(score.breakdown).forEach(([key, value]) => {
+          acc[key as keyof typeof acc] = (acc[key as keyof typeof acc] || 0) + value
+        })
+        return acc
+      }, {
+        technicalAccuracy: 0,
+        communicationSkills: 0,
+        problemSolving: 0,
+        confidence: 0,
+        relevance: 0,
+        clarity: 0,
+        structure: 0,
+        examples: 0
+      }) as DetailedScore['breakdown'],
+      levelAssessment: 'mid' as const,
+      strengths: [],
+      weaknesses: [],
+      recommendations: [],
+      improvementPlan: { shortTerm: [], longTerm: [] }
+    } : null
+
+    // Average the breakdown scores
+    if (overallDetailedScore && detailedScores.length > 0) {
+      Object.keys(overallDetailedScore.breakdown).forEach(key => {
+        overallDetailedScore.breakdown[key as keyof typeof overallDetailedScore.breakdown] = 
+          Math.round(overallDetailedScore.breakdown[key as keyof typeof overallDetailedScore.breakdown] / detailedScores.length)
+      })
+    }
+
+    // Store performance metrics
+    if (overallDetailedScore) {
+      analyticsService.storePerformanceMetrics(userId, sessionId, overallDetailedScore, sessionStats)
+      
+      // Update adaptive engine with session outcome
+      adaptiveDifficultyEngine.updateSessionOutcome(
+        userId,
+        storedSession.createdAt,
+        {
+          overallScore: overallDetailedScore.overallScore,
+          completionRate: sessionStats.completionRate
+        }
+      )
+    }
+
+    // Update session status to completed
+    this.updateSessionStatus(sessionId, 'completed')
+
+    return {
+      detailedScore: overallDetailedScore,
+      sessionStats
+    }
+  }
+
+  // Get user performance summary
+  public getUserPerformanceSummary(userId: string) {
+    return analyticsService.generateUserPerformanceProfile(userId)
+  }
+
+  // Get recommendation accuracy metrics
+  public getRecommendationAccuracy(userId: string) {
+    return adaptiveDifficultyEngine.getRecommendationAccuracy(userId)
   }
 }
 

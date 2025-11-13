@@ -64,6 +64,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: "Practice", href: "/dashboard/practice", icon: PlayCircle },
     { name: "Schedule", href: "/dashboard/schedule", icon: Calendar },
     { name: "Progress", href: "/dashboard/progress", icon: BarChart3 },
+    { name: "Questions", href: "/dashboard/questions", icon: Library },
     { name: "Resources", href: "/dashboard/resources", icon: BookOpen },
     { name: "Profile", href: "/dashboard/profile", icon: User },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },

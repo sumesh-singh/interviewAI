@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import LoadingSpinner from "./loading-spinner"
+import { LoadingSpinner } from "./loading-spinner"
 import { createClient } from "@/lib/supabase/client"
 
 interface ProtectedRouteProps {
