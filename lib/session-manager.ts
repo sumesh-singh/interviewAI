@@ -2,10 +2,12 @@ import { nanoid } from 'nanoid'
 import { offlineStorage, type StoredSession } from './offline-storage'
 import { interviewTemplates } from '@/data/interview-templates'
 import { openAIService } from './openai'
-import type { InterviewSession, InterviewQuestion } from '@/types/interview'
+import type { InterviewSession, InterviewQuestion, QuestionSourceMetadata } from '@/types/interview'
 
 export interface SessionCreateParams {
   templateId?: string
+  userQuestionSetIds?: string[]
+  includeDefaultQuestions?: boolean
   role?: string
   type: 'behavioral' | 'technical' | 'mixed'
   difficulty: 'easy' | 'medium' | 'hard'
@@ -31,24 +33,63 @@ export class SessionManager {
     let questions: InterviewQuestion[] = []
 
     try {
-      if (params.templateId) {
-        // Use template questions
-        const template = interviewTemplates.find(t => t.id === params.templateId)
-        if (template) {
-          questions = template.questions
+      const questionSources: QuestionSourceMetadata = {}
+      const selectedUserSetIds = params.userQuestionSetIds?.filter(id => !!id) ?? []
+      const includeDefault = params.includeDefaultQuestions ?? false
+
+      let userQuestions: InterviewQuestion[] = []
+      if (selectedUserSetIds.length > 0) {
+        userQuestions = offlineStorage.getQuestionsFromUserSetIds(selectedUserSetIds)
+        if (userQuestions.length > 0) {
+          questionSources.userSetIds = Array.from(new Set(selectedUserSetIds))
         }
-      } else if (params.customQuestions) {
-        // Use custom questions
+      }
+
+      const selectedTemplate = params.templateId
+        ? interviewTemplates.find(t => t.id === params.templateId)
+        : undefined
+      const templateQuestions = selectedTemplate
+        ? selectedTemplate.questions.map(question => ({
+            ...question,
+            origin: question.origin ?? 'template',
+          }))
+        : []
+      let templateUsed = false
+
+      if (userQuestions.length > 0) {
+        questions = [...userQuestions]
+
+        if (includeDefault) {
+          const fallbackPool = templateQuestions.length > 0
+            ? templateQuestions
+            : this.getCachedQuestionsByType(params.type, params.difficulty)
+
+          if (fallbackPool.length > 0) {
+            questions = this.mergeQuestionCollections(questions, fallbackPool)
+            questionSources.includedDefault = true
+
+            if (templateQuestions.length > 0) {
+              templateUsed = true
+            }
+          }
+        }
+      } else if (templateQuestions.length > 0) {
+        questions = [...templateQuestions]
+        templateUsed = true
+      }
+
+      if (questions.length === 0 && params.customQuestions) {
         questions = params.customQuestions
-      } else {
-        // Generate AI questions if online, fallback to cached questions if offline
-        if (navigator.onLine && params.role) {
+      }
+
+      if (questions.length === 0) {
+        if (typeof navigator !== 'undefined' && navigator.onLine && params.role) {
           try {
             const generatedQuestions = await openAIService.generateQuestions({
               role: params.role,
               type: params.type,
               difficulty: params.difficulty,
-              count: Math.floor(params.duration / 10), // Rough estimate of questions per duration
+              count: Math.max(1, Math.floor(params.duration / 10)),
             })
 
             questions = generatedQuestions.map((q, index) => ({
@@ -57,8 +98,11 @@ export class SessionManager {
               difficulty: q.difficulty as 'easy' | 'medium' | 'hard',
               question: q.question,
               followUp: q.followUp,
-              timeLimit: q.timeLimit
+              timeLimit: q.timeLimit,
+              origin: 'ai',
             }))
+
+            questionSources.aiGenerated = true
 
             // Cache the generated questions for offline use
             offlineStorage.addQuestionsToCache(questions)
@@ -67,9 +111,17 @@ export class SessionManager {
             questions = this.getCachedQuestionsByType(params.type, params.difficulty)
           }
         } else {
-          // Use cached questions when offline
+          // Use cached questions when offline or role information is missing
           questions = this.getCachedQuestionsByType(params.type, params.difficulty)
         }
+      }
+
+      if (questions.length === 0) {
+        questions = this.getCachedQuestionsByType(params.type, params.difficulty)
+      }
+
+      if (templateUsed && selectedTemplate) {
+        questionSources.templateId = selectedTemplate.id
       }
 
       const session: InterviewSession = {
@@ -79,7 +131,8 @@ export class SessionManager {
         difficulty: params.difficulty,
         questions,
         currentQuestionIndex: 0,
-        status: 'setup'
+        status: 'setup',
+        ...(Object.keys(questionSources).length > 0 ? { questionSources } : {}),
       }
 
       // Save to offline storage
@@ -88,16 +141,40 @@ export class SessionManager {
         session,
         responses: [],
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       }
 
       offlineStorage.saveSession(storedSession)
-      
+
       return session
     } catch (error) {
       console.error('Failed to create session:', error)
       throw error
     }
+  }
+
+  private mergeQuestionCollections(
+    primary: InterviewQuestion[],
+    secondary: InterviewQuestion[]
+  ): InterviewQuestion[] {
+    const seen = new Set<string>()
+    const merged: InterviewQuestion[] = []
+
+    primary.forEach(question => {
+      if (!seen.has(question.id)) {
+        merged.push(question)
+        seen.add(question.id)
+      }
+    })
+
+    secondary.forEach(question => {
+      if (!seen.has(question.id)) {
+        merged.push(question)
+        seen.add(question.id)
+      }
+    })
+
+    return merged
   }
 
   // Get cached questions by type and difficulty
