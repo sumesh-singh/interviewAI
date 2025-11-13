@@ -1,7 +1,11 @@
+"use client"
+
 import StatsCard from "./stats-card"
+import UpcomingSessions from "./upcoming-sessions"
 import { Button } from "@/components/ui/button"
 import { PlayCircle, BarChart3, Clock, TrendingUp, Calendar, Star } from "lucide-react"
 import type { UserStats, RecentSession } from "@/types/dashboard"
+import Link from "next/link"
 
 interface DashboardOverviewProps {
   stats: UserStats
@@ -14,11 +18,13 @@ export default function DashboardOverview({ stats, recentSessions }: DashboardOv
       {/* Welcome section */}
       <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-6 text-white">
         <h1 className="text-2xl font-bold mb-2">Welcome back, John!</h1>
-        <p className="text-purple-100 mb-4">Ready to ace your next interview? Let's continue your preparation.</p>
-        <Button className="bg-white text-purple-600 hover:bg-gray-100">
-          <PlayCircle className="w-4 h-4 mr-2" />
-          Start New Interview
-        </Button>
+        <p className="text-purple-100 mb-4">Ready to ace your next interview? Let&apos;s continue your preparation.</p>
+        <Link href="/dashboard/practice">
+          <Button className="bg-white text-purple-600 hover:bg-gray-100">
+            <PlayCircle className="w-4 h-4 mr-2" />
+            Start New Interview
+          </Button>
+        </Link>
       </div>
 
       {/* Stats grid */}
@@ -53,24 +59,33 @@ export default function DashboardOverview({ stats, recentSessions }: DashboardOv
         />
       </div>
 
+      {/* Upcoming sessions */}
+      <UpcomingSessions />
+
       {/* Quick actions and recent sessions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Quick actions */}
         <div className="bg-white rounded-lg p-6 shadow-sm border">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
           <div className="space-y-3">
-            <Button className="w-full justify-start bg-transparent" variant="outline">
-              <PlayCircle className="w-4 h-4 mr-2" />
-              Technical Interview Practice
-            </Button>
-            <Button className="w-full justify-start bg-transparent" variant="outline">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              View Detailed Progress
-            </Button>
-            <Button className="w-full justify-start bg-transparent" variant="outline">
-              <Calendar className="w-4 h-4 mr-2" />
-              Schedule Mock Interview
-            </Button>
+            <Link href="/dashboard/practice" className="block">
+              <Button className="w-full justify-start bg-transparent" variant="outline">
+                <PlayCircle className="w-4 h-4 mr-2" />
+                Technical Interview Practice
+              </Button>
+            </Link>
+            <Link href="/dashboard/progress" className="block">
+              <Button className="w-full justify-start bg-transparent" variant="outline">
+                <BarChart3 className="w-4 h-4 mr-2" />
+                View Detailed Progress
+              </Button>
+            </Link>
+            <Link href="/dashboard/schedule" className="block">
+              <Button className="w-full justify-start bg-transparent" variant="outline">
+                <Calendar className="w-4 h-4 mr-2" />
+                Schedule Mock Interview
+              </Button>
+            </Link>
           </div>
         </div>
 
