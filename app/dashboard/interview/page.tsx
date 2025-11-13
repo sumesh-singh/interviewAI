@@ -4,6 +4,7 @@ import { useState } from "react"
 import { InterviewSetup } from "@/components/interview-setup"
 import { InterviewSession } from "@/components/interview-session"
 import type { InterviewSession as IInterviewSession } from "@/types/interview"
+import type { InterviewTemplate } from "@/data/interview-templates"
 import { mockQuestions } from "@/data/mock-questions"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -36,6 +37,21 @@ export default function InterviewPage() {
       duration: config.duration,
       difficulty: config.difficulty,
       questions: filteredQuestions,
+      currentQuestionIndex: 0,
+      status: "setup",
+    }
+
+    setCurrentSession(session)
+    setCompletedSession(null)
+  }
+
+  const handleStartTemplate = (template: InterviewTemplate) => {
+    const session: IInterviewSession = {
+      id: Date.now().toString(),
+      type: template.category,
+      duration: template.duration,
+      difficulty: template.difficulty,
+      questions: template.questions,
       currentQuestionIndex: 0,
       status: "setup",
     }
@@ -120,5 +136,10 @@ export default function InterviewPage() {
   }
 
   // Setup view
-  return <InterviewSetup onStartInterview={handleStartInterview} />
+  return (
+    <InterviewSetup 
+      onStartInterview={handleStartInterview}
+      onStartTemplate={handleStartTemplate}
+    />
+  )
 }
