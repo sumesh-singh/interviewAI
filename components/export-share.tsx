@@ -41,6 +41,7 @@ export function ExportShare({ sessionId, sessionData, detailedScore }: ExportSha
     session: sessionData.session,
     responses: sessionData.responses,
     score: detailedScore,
+    scoringWeights: sessionData.session.scoringWeights,
     exportedAt: new Date().toISOString(),
     metadata: {
       totalQuestions: sessionData.session.questions.length,
@@ -131,6 +132,17 @@ ${detailedScore ? `### Score Breakdown
 - **Clarity**: ${detailedScore.breakdown.clarity}/100
 - **Structure**: ${detailedScore.breakdown.structure}/100
 - **Examples**: ${detailedScore.breakdown.examples}/100` : ''}
+
+${sessionData.session.scoringWeights ? `### Scoring Weights Used
+*Your custom weighting configuration for this evaluation:*
+- **Technical Accuracy**: ${(sessionData.session.scoringWeights.technicalAccuracy * 100).toFixed(0)}%
+- **Communication Skills**: ${(sessionData.session.scoringWeights.communicationSkills * 100).toFixed(0)}%
+- **Problem Solving**: ${(sessionData.session.scoringWeights.problemSolving * 100).toFixed(0)}%
+- **Confidence**: ${(sessionData.session.scoringWeights.confidence * 100).toFixed(0)}%
+- **Relevance**: ${(sessionData.session.scoringWeights.relevance * 100).toFixed(0)}%
+- **Clarity**: ${(sessionData.session.scoringWeights.clarity * 100).toFixed(0)}%
+- **Structure**: ${(sessionData.session.scoringWeights.structure * 100).toFixed(0)}%
+- **Examples**: ${(sessionData.session.scoringWeights.examples * 100).toFixed(0)}%` : ''}
 
 ## Questions and Responses
 
@@ -224,6 +236,23 @@ ${detailedScore.improvementPlan.longTerm.map(l => `- ${l}`).join('\n')}` : ''}
                 <div class="score-item"><strong>Examples:</strong> ${detailedScore.breakdown.examples}/100</div>
             </div>
         </div>
+
+        ${sessionData.session.scoringWeights ? `
+        <div class="scoring-weights" style="margin: 30px 0; padding: 20px; background: #e8f4f8; border-radius: 8px; border-left: 4px solid #007bff;">
+            <h3>Your Scoring Weights</h3>
+            <p style="font-size: 0.9em; margin-bottom: 15px;"><em>Your custom weighting configuration applied to this evaluation:</em></p>
+            <div class="score-grid">
+                <div class="score-item"><strong>Technical Accuracy:</strong> ${(sessionData.session.scoringWeights.technicalAccuracy * 100).toFixed(0)}%</div>
+                <div class="score-item"><strong>Communication:</strong> ${(sessionData.session.scoringWeights.communicationSkills * 100).toFixed(0)}%</div>
+                <div class="score-item"><strong>Problem Solving:</strong> ${(sessionData.session.scoringWeights.problemSolving * 100).toFixed(0)}%</div>
+                <div class="score-item"><strong>Confidence:</strong> ${(sessionData.session.scoringWeights.confidence * 100).toFixed(0)}%</div>
+                <div class="score-item"><strong>Relevance:</strong> ${(sessionData.session.scoringWeights.relevance * 100).toFixed(0)}%</div>
+                <div class="score-item"><strong>Clarity:</strong> ${(sessionData.session.scoringWeights.clarity * 100).toFixed(0)}%</div>
+                <div class="score-item"><strong>Structure:</strong> ${(sessionData.session.scoringWeights.structure * 100).toFixed(0)}%</div>
+                <div class="score-item"><strong>Examples:</strong> ${(sessionData.session.scoringWeights.examples * 100).toFixed(0)}%</div>
+            </div>
+        </div>
+        ` : ''}
         ` : ''}
 
         <div class="questions-responses">

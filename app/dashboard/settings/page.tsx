@@ -32,8 +32,12 @@ import {
   EyeOff
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
-import LoadingSpinner from "@/components/loading-spinner"
+import { LoadingSpinner } from "@/components/loading-spinner"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Slider } from "@/components/ui/slider"
+import type { ScoringWeights } from "@/types/interview"
+import { offlineStorage } from "@/lib/offline-storage"
+import { ScoringSystem } from "@/lib/scoring-system"
 
 interface NotificationForm {
   email_notifications: boolean
@@ -54,6 +58,10 @@ interface SecurityForm {
   confirm_password: string
 }
 
+interface ScoringForm extends ScoringWeights {
+  presetName?: string
+}
+
 export default function SettingsPage() {
   const [user, setUser] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -66,6 +74,8 @@ export default function SettingsPage() {
     new: false,
     confirm: false
   })
+  const [scoringWeights, setScoringWeights] = useState<ScoringWeights>(ScoringSystem.getDefaultWeights())
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
 
   const supabase = createClient()
 
@@ -99,7 +109,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetchSettings()
-  }, [])
+  }, [fetchSettings])
 
   const fetchSettings = async () => {
     try {
@@ -136,6 +146,33 @@ export default function SettingsPage() {
           setAppearanceValue('theme', 'system')
           setAppearanceValue('language', 'en')
           setAppearanceValue('timezone', 'UTC')
+        }
+
+        // Fetch scoring weights
+        const { data: weightsData } = await supabase
+          .from('user_scoring_weights')
+          .select('*')
+          .eq('user_id', user.id)
+          .single()
+
+        if (weightsData) {
+          const weights: ScoringWeights = {
+            technicalAccuracy: weightsData.technical_accuracy || 0.15,
+            communicationSkills: weightsData.communication_skills || 0.20,
+            problemSolving: weightsData.problem_solving || 0.15,
+            confidence: weightsData.confidence || 0.10,
+            relevance: weightsData.relevance || 0.15,
+            clarity: weightsData.clarity || 0.10,
+            structure: weightsData.structure || 0.10,
+            examples: weightsData.examples || 0.05,
+          }
+          setScoringWeights(weights)
+          setSelectedPreset(weightsData.preset_name || null)
+          offlineStorage.saveScoringWeights(weights)
+        } else {
+          const defaultWeights = ScoringSystem.getDefaultWeights()
+          setScoringWeights(defaultWeights)
+          offlineStorage.saveScoringWeights(defaultWeights)
         }
       }
     } catch (error) {
@@ -242,6 +279,55 @@ export default function SettingsPage() {
     }
   }
 
+  const handleSaveScoringWeights = async () => {
+    if (!user) return
+
+    setIsSaving(true)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      const { error } = await supabase
+        .from('user_scoring_weights')
+        .upsert({
+          user_id: user.id,
+          technical_accuracy: scoringWeights.technicalAccuracy,
+          communication_skills: scoringWeights.communicationSkills,
+          problem_solving: scoringWeights.problemSolving,
+          confidence: scoringWeights.confidence,
+          relevance: scoringWeights.relevance,
+          clarity: scoringWeights.clarity,
+          structure: scoringWeights.structure,
+          examples: scoringWeights.examples,
+          preset_name: selectedPreset,
+          updated_at: new Date().toISOString()
+        })
+
+      if (error) throw error
+
+      offlineStorage.saveScoringWeights(scoringWeights)
+      setSuccess('Scoring weights updated successfully!')
+    } catch (error: any) {
+      setError(error.message || 'Failed to update scoring weights')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleApplyPreset = (presetName: string) => {
+    const presetWeights = ScoringSystem.getPresetWeights(presetName)
+    if (presetWeights) {
+      setScoringWeights(presetWeights)
+      setSelectedPreset(presetName)
+    }
+  }
+
+  const handleResetToDefaults = () => {
+    const defaultWeights = ScoringSystem.getDefaultWeights()
+    setScoringWeights(defaultWeights)
+    setSelectedPreset(null)
+  }
+
   const handleDeleteAccount = async () => {
     if (!user) return
 
@@ -319,10 +405,14 @@ export default function SettingsPage() {
           )}
 
           <Tabs defaultValue="notifications" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="notifications" className="flex items-center gap-2">
                 <Bell className="w-4 h-4" />
                 Notifications
+              </TabsTrigger>
+              <TabsTrigger value="scoring" className="flex items-center gap-2">
+                <Settings className="w-4 h-4" />
+                Scoring
               </TabsTrigger>
               <TabsTrigger value="appearance" className="flex items-center gap-2">
                 <Palette className="w-4 h-4" />
@@ -416,6 +506,129 @@ export default function SettingsPage() {
                       )}
                     </Button>
                   </form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="scoring" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="w-5 h-5" />
+                    Scoring Weights
+                  </CardTitle>
+                  <CardDescription>
+                    Customize how your responses are evaluated by adjusting the weight of each criterion
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Quick Presets</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button 
+                          type="button" 
+                          variant={selectedPreset === 'technical' ? 'default' : 'outline'}
+                          onClick={() => handleApplyPreset('technical')}
+                          className="w-full"
+                        >
+                          Technical
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant={selectedPreset === 'behavioral' ? 'default' : 'outline'}
+                          onClick={() => handleApplyPreset('behavioral')}
+                          className="w-full"
+                        >
+                          Behavioral
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant={selectedPreset === 'product-manager' ? 'default' : 'outline'}
+                          onClick={() => handleApplyPreset('product-manager')}
+                          className="w-full"
+                        >
+                          Product Manager
+                        </Button>
+                        <Button 
+                          type="button" 
+                          variant={selectedPreset === 'leadership' ? 'default' : 'outline'}
+                          onClick={() => handleApplyPreset('leadership')}
+                          className="w-full"
+                        >
+                          Leadership
+                        </Button>
+                      </div>
+                      <Button 
+                        type="button" 
+                        variant="outline"
+                        onClick={handleResetToDefaults}
+                        className="w-full"
+                      >
+                        Reset to Defaults
+                      </Button>
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-4">
+                      {[
+                        { key: 'technicalAccuracy', label: 'Technical Accuracy', description: 'Accuracy of technical content' },
+                        { key: 'communicationSkills', label: 'Communication Skills', description: 'Clarity and articulation' },
+                        { key: 'problemSolving', label: 'Problem Solving', description: 'Structured approach to problems' },
+                        { key: 'confidence', label: 'Confidence', description: 'Conviction in responses' },
+                        { key: 'relevance', label: 'Relevance', description: 'How well you address the question' },
+                        { key: 'clarity', label: 'Clarity', description: 'Clear and concise communication' },
+                        { key: 'structure', label: 'Structure', description: 'Organization of thoughts' },
+                        { key: 'examples', label: 'Examples', description: 'Use of concrete examples' }
+                      ].map(({ key, label, description }) => (
+                        <div key={key} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-base">{label}</Label>
+                              <p className="text-sm text-muted-foreground">{description}</p>
+                            </div>
+                            <Badge variant="secondary" className="text-lg">
+                              {(scoringWeights[key as keyof ScoringWeights] * 100).toFixed(0)}%
+                            </Badge>
+                          </div>
+                          <Slider
+                            value={[scoringWeights[key as keyof ScoringWeights] * 100]}
+                            onValueChange={(value) => 
+                              setScoringWeights({
+                                ...scoringWeights,
+                                [key]: value[0] / 100
+                              })
+                            }
+                            min={0}
+                            max={50}
+                            step={1}
+                            className="w-full"
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-2 p-4 bg-blue-50 rounded-lg">
+                      <p className="text-sm font-medium text-blue-900">Weight Information</p>
+                      <p className="text-sm text-blue-800">
+                        Adjust the sliders to set how much each criterion should impact your overall score. Higher percentages mean more weight in the final evaluation.
+                      </p>
+                    </div>
+
+                    <Button type="button" onClick={handleSaveScoringWeights} disabled={isSaving} className="w-full">
+                      {isSaving ? (
+                        <>
+                          <LoadingSpinner size="sm" variant="muted" className="mr-2" />
+                          Saving...
+                        </>
+                      ) : (
+                        'Save Scoring Weights'
+                      )}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

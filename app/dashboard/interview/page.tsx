@@ -1,17 +1,63 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { InterviewSetup } from "@/components/interview-setup"
 import { InterviewSession } from "@/components/interview-session"
-import type { InterviewSession as IInterviewSession } from "@/types/interview"
+import type { InterviewSession as IInterviewSession, ScoringWeights } from "@/types/interview"
 import { mockQuestions } from "@/data/mock-questions"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, CheckCircle } from "lucide-react"
+import { offlineStorage } from "@/lib/offline-storage"
+import { createClient } from "@/lib/supabase/client"
 
 export default function InterviewPage() {
   const [currentSession, setCurrentSession] = useState<IInterviewSession | null>(null)
   const [completedSession, setCompletedSession] = useState<IInterviewSession | null>(null)
+  const [scoringWeights, setScoringWeights] = useState<ScoringWeights | null>(null)
+
+  const supabase = createClient()
+
+  useEffect(() => {
+    loadScoringWeights()
+  }, [])
+
+  const loadScoringWeights = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (user) {
+        // Try to fetch from Supabase first
+        const { data: weightsData } = await supabase
+          .from('user_scoring_weights')
+          .select('*')
+          .eq('user_id', user.id)
+          .single()
+
+        if (weightsData) {
+          const weights: ScoringWeights = {
+            technicalAccuracy: weightsData.technical_accuracy || 0.15,
+            communicationSkills: weightsData.communication_skills || 0.20,
+            problemSolving: weightsData.problem_solving || 0.15,
+            confidence: weightsData.confidence || 0.10,
+            relevance: weightsData.relevance || 0.15,
+            clarity: weightsData.clarity || 0.10,
+            structure: weightsData.structure || 0.10,
+            examples: weightsData.examples || 0.05,
+          }
+          setScoringWeights(weights)
+          offlineStorage.saveScoringWeights(weights)
+          return
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to fetch scoring weights from Supabase:', error)
+    }
+
+    // Fall back to offline storage
+    const offlineWeights = offlineStorage.getScoringWeights()
+    setScoringWeights(offlineWeights)
+  }
 
   const handleStartInterview = async (config: {
     type: "behavioral" | "technical" | "mixed"
@@ -57,6 +103,22 @@ export default function InterviewPage() {
       duration: config.duration,
       difficulty: config.difficulty,
       questions: filteredQuestions,
+      currentQuestionIndex: 0,
+      status: "setup",
+      scoringWeights: scoringWeights || undefined,
+    }
+
+    setCurrentSession(session)
+    setCompletedSession(null)
+  }
+
+  const handleStartTemplate = (template: InterviewTemplate) => {
+    const session: IInterviewSession = {
+      id: Date.now().toString(),
+      type: template.category,
+      duration: template.duration,
+      difficulty: template.difficulty,
+      questions: template.questions,
       currentQuestionIndex: 0,
       status: "setup",
     }
@@ -141,5 +203,10 @@ export default function InterviewPage() {
   }
 
   // Setup view
-  return <InterviewSetup onStartInterview={handleStartInterview} />
+  return (
+    <InterviewSetup 
+      onStartInterview={handleStartInterview}
+      onStartTemplate={handleStartTemplate}
+    />
+  )
 }
