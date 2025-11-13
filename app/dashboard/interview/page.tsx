@@ -91,6 +91,21 @@ export default function InterviewPage() {
     setCompletedSession(null)
   }
 
+  const handleStartTemplate = (template: InterviewTemplate) => {
+    const session: IInterviewSession = {
+      id: Date.now().toString(),
+      type: template.category,
+      duration: template.duration,
+      difficulty: template.difficulty,
+      questions: template.questions,
+      currentQuestionIndex: 0,
+      status: "setup",
+    }
+
+    setCurrentSession(session)
+    setCompletedSession(null)
+  }
+
   const handleSessionEnd = (session: IInterviewSession) => {
     setCompletedSession(session)
     setCurrentSession(null)
@@ -167,5 +182,10 @@ export default function InterviewPage() {
   }
 
   // Setup view
-  return <InterviewSetup onStartInterview={handleStartInterview} />
+  return (
+    <InterviewSetup 
+      onStartInterview={handleStartInterview}
+      onStartTemplate={handleStartTemplate}
+    />
+  )
 }
