@@ -1,12 +1,13 @@
 import { interviewTemplates, type InterviewTemplate } from "@/data/interview-templates"
 import { mockQuestions } from "@/data/mock-questions"
-import type { InterviewSession, InterviewQuestion } from "@/types/interview"
+import type { InterviewSession, InterviewQuestion, ScoringWeights } from "@/types/interview"
 
 const STORAGE_KEYS = {
   INTERVIEW_SESSIONS: 'interview-sessions',
   CACHED_QUESTIONS: 'cached-questions',
   TEMPLATES: 'interview-templates',
   USER_PREFERENCES: 'user-preferences',
+  SCORING_WEIGHTS: 'scoring-weights',
 } as const
 
 export interface StoredSession {
@@ -146,6 +147,27 @@ export class OfflineStorage {
     return { ...defaultPreferences, ...stored }
   }
 
+  // Scoring Weights
+  public saveScoringWeights(weights: ScoringWeights): void {
+    this.setItem(STORAGE_KEYS.SCORING_WEIGHTS, weights)
+  }
+
+  public getScoringWeights(): ScoringWeights {
+    const defaultWeights: ScoringWeights = {
+      technicalAccuracy: 0.15,
+      communicationSkills: 0.20,
+      problemSolving: 0.15,
+      confidence: 0.10,
+      relevance: 0.15,
+      clarity: 0.10,
+      structure: 0.10,
+      examples: 0.05
+    }
+
+    const stored = this.getItem<ScoringWeights>(STORAGE_KEYS.SCORING_WEIGHTS)
+    return { ...defaultWeights, ...stored }
+  }
+
   // Utility methods
   public clearAllData(): void {
     Object.values(STORAGE_KEYS).forEach(key => {
@@ -175,6 +197,7 @@ export class OfflineStorage {
     const data = {
       sessions: this.getAllSessions(),
       preferences: this.getPreferences(),
+      scoringWeights: this.getScoringWeights(),
       templates: this.getCachedTemplates(),
       questions: this.getCachedQuestions(),
       exportedAt: new Date().toISOString(),
@@ -193,6 +216,10 @@ export class OfflineStorage {
       
       if (data.preferences) {
         this.setItem(STORAGE_KEYS.USER_PREFERENCES, data.preferences)
+      }
+
+      if (data.scoringWeights) {
+        this.setItem(STORAGE_KEYS.SCORING_WEIGHTS, data.scoringWeights)
       }
       
       if (data.templates) {

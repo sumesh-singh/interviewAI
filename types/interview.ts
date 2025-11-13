@@ -7,6 +7,17 @@ export interface InterviewQuestion {
   timeLimit?: number // in seconds
 }
 
+export interface ScoringWeights {
+  technicalAccuracy: number
+  communicationSkills: number
+  problemSolving: number
+  confidence: number
+  relevance: number
+  clarity: number
+  structure: number
+  examples: number
+}
+
 export interface InterviewSession {
   id: string
   type: "behavioral" | "technical" | "mixed"
@@ -17,6 +28,7 @@ export interface InterviewSession {
   startTime?: Date
   endTime?: Date
   status: "setup" | "active" | "paused" | "completed"
+  scoringWeights?: ScoringWeights
 }
 
 export interface VoiceState {
