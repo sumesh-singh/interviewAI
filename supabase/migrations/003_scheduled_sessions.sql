@@ -18,9 +18,9 @@ CREATE TABLE IF NOT EXISTS scheduled_sessions (
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_scheduled_sessions_user_id ON scheduled_sessions(user_id);
-CREATE INDEX IF NOT EXISTS idx_scheduled_sessions_scheduled_date ON scheduled_sessions(scheduled_date);
 CREATE INDEX IF NOT EXISTS idx_scheduled_sessions_status ON scheduled_sessions(status);
-CREATE INDEX IF NOT EXISTS idx_scheduled_sessions_user_date ON scheduled_sessions(user_id, scheduled_date);
+CREATE INDEX IF NOT EXISTS idx_scheduled_sessions_start_time ON scheduled_sessions(start_time);
+CREATE INDEX IF NOT EXISTS idx_scheduled_sessions_calendar_event_id ON scheduled_sessions(calendar_event_id);
 
 -- Enable Row Level Security
 ALTER TABLE scheduled_sessions ENABLE ROW LEVEL SECURITY;
