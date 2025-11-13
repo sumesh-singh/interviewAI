@@ -11,6 +11,7 @@ export interface SessionCreateParams {
   difficulty: 'easy' | 'medium' | 'hard'
   duration: number
   customQuestions?: InterviewQuestion[]
+  questionBankId?: string
 }
 
 export class SessionManager {
@@ -31,7 +32,10 @@ export class SessionManager {
     let questions: InterviewQuestion[] = []
 
     try {
-      if (params.templateId) {
+      if (params.questionBankId) {
+        // Use questions from question bank
+        questions = await this.fetchQuestionsFromBank(params.questionBankId)
+      } else if (params.templateId) {
         // Use template questions
         const template = interviewTemplates.find(t => t.id === params.templateId)
         if (template) {
@@ -97,6 +101,33 @@ export class SessionManager {
     } catch (error) {
       console.error('Failed to create session:', error)
       throw error
+    }
+  }
+
+  // Fetch questions from question bank
+  private async fetchQuestionsFromBank(bankId: string): Promise<InterviewQuestion[]> {
+    try {
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      
+      const { data, error } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('question_bank_id', bankId)
+      
+      if (error) throw error
+      
+      return data.map(q => ({
+        id: q.id,
+        type: q.type as 'behavioral' | 'technical' | 'situational',
+        difficulty: q.difficulty as 'easy' | 'medium' | 'hard',
+        question: q.question,
+        followUp: q.follow_up,
+        timeLimit: q.time_limit
+      }))
+    } catch (error) {
+      console.error('Failed to fetch questions from bank:', error)
+      return []
     }
   }
 
