@@ -33,3 +33,43 @@ export interface SessionControls {
   currentQuestion: number
   totalQuestions: number
 }
+
+export interface AdaptiveConfig {
+  userId: string
+  recommendedDifficulty: "easy" | "medium" | "hard"
+  recommendedType: "behavioral" | "technical" | "mixed"
+  confidence: number
+  rationale: {
+    primary: string
+    supporting: string[]
+  }
+  alternativeOptions: {
+    difficulty: "easy" | "medium" | "hard"
+    type: "behavioral" | "technical" | "mixed"
+    reason: string
+  }[]
+  focusAreas: string[]
+  estimatedDifficulty: "challenging" | "appropriate" | "comfortable"
+}
+
+export interface UserPerformanceSummary {
+  userId: string
+  totalSessions: number
+  averageOverallScore: number
+  strengths: string[]
+  weaknesses: string[]
+  preferredDifficulty: "easy" | "medium" | "hard"
+  performanceByType: Record<"behavioral" | "technical" | "mixed", {
+    averageScore: number
+    sessionCount: number
+    bestScore: number
+  }>
+  recentTrends: Array<{
+    metric: string
+    current: number
+    previous: number
+    trend: "improving" | "declining" | "stable"
+    changePercentage: number
+  }>
+  lastUpdated: Date
+}
