@@ -13,6 +13,7 @@ The AI Voice Interview Assistant is a professional-grade Progressive Web App (PW
 - **Follow-Up Question Logic**: Generates AI-powered follow-up questions based on user responses.
 - **Export & Sharing**: Allows users to export interview sessions in multiple formats, including JSON, PDF, and Markdown.
 - **Interview Templates**: Includes 7 pre-built templates for different roles that can be customized.
+- **Job Feed Integration**: Personalized job listings from LinkedIn and other sources aligned with user profiles.
 - **Progressive Web App (PWA)**: Offers full offline functionality and can be installed on mobile and desktop devices.
 - **Progress Tracking & Analytics**: Provides a comprehensive analytics dashboard with performance tracking and goal-setting features.
 - **Session Scheduling**: Schedule interview practice sessions with optional Google Calendar integration for automatic synchronization.
@@ -31,6 +32,11 @@ The AI Voice Interview Assistant is a professional-grade Progressive Web App (PW
 - **Web Speech API**: Real-time speech recognition
 - **Speech Synthesis API**: Text-to-speech functionality
 
+### Backend & Database
+- **Supabase**: Authentication, database, and Row Level Security
+- **PostgreSQL**: Relational database with full-text search
+- **RapidAPI**: External job data integration (JSearch API)
+
 ### PWA Technologies
 - **Service Workers**: Offline caching and background sync
 - **Web App Manifest**: Installation and app metadata
@@ -48,7 +54,10 @@ The AI Voice Interview Assistant is a professional-grade Progressive Web App (PW
    ```bash
    cp .env.example .env.local
    ```
-   Then, add your `OPENAI_API_KEY` to the `.env.local` file.
+   Then, configure the required API keys in `.env.local`:
+   - `OPENAI_API_KEY` - Required for AI features
+   - `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Required for authentication
+   - `RAPIDAPI_KEY` - Optional, for job feed integration
 
 3. **Setup Google Calendar Integration (Optional)**
    For optional Google Calendar sync, see [CALENDAR_INTEGRATION_SETUP.md](./CALENDAR_INTEGRATION_SETUP.md) for detailed configuration steps.
